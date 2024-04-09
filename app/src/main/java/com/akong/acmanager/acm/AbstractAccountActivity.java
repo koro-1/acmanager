@@ -38,10 +38,10 @@ public abstract class AbstractAccountActivity<T extends AccountManger,M extends 
             public void onItemClick(View view, AccountInfo accountInfo) {
                 boolean flag= loginAccountInfo.getAccountId().equals(accountInfo.getAccountId());
                 if (!flag)
-                    instance.doInLogout(new ResultCallback() {
+                    instance.doInLogout(AbstractAccountActivity.this,new ResultCallback() {
                         @Override
                         public void onSuccess(int statusCode,String message) {
-                            instance.doInLogin(accountInfo, new ResultCallback() {
+                            instance.doInLogin(AbstractAccountActivity.this,accountInfo, new ResultCallback() {
                                 @Override
                                 public void onSuccess(int statusCode,String message) {
                                     startActivity(new Intent(AbstractAccountActivity.this, Main));
