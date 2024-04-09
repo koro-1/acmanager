@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Build;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.LifecycleOwner;
 
 import com.alibaba.fastjson.JSON;
@@ -66,9 +67,9 @@ public abstract class AccountManger {
         SPUtil.put(context, "loginAccountInfo", JSON.toJSONString(loginAccountInfo));
 
     }
-  public abstract void doInLogin(Activity onOwner,AccountInfo info,ResultCallback callback);
-    public abstract  void doInLogout(Activity onOwner, ResultCallback callback);
-    public abstract  void autoLogin(Activity onOwner,ResultCallback callback);
+  public abstract void doInLogin(AppCompatActivity onOwner, AccountInfo info, ResultCallback callback);
+    public abstract  void doInLogout(AppCompatActivity onOwner, ResultCallback callback);
+    public abstract  void autoLogin(AppCompatActivity onOwner,ResultCallback callback);
 
 
 
