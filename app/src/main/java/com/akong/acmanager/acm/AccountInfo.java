@@ -1,13 +1,22 @@
 package com.akong.acmanager.acm;
 
+import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "account_info")
 public class AccountInfo {
+    @ColumnInfo
     private String name;
+    @PrimaryKey
+    @NonNull
     private String accountId;
+    @ColumnInfo
     private String password;
+    @ColumnInfo
     private String imgUrl;
 
-    public AccountInfo() {
-    }
 
     public AccountInfo(String name, String accountId, String password, String imgUrl) {
         this.name = name;

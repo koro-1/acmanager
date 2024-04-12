@@ -1,75 +1,102 @@
 package com.akong.acmanager.acm;
 
+
 import android.app.Activity;
 import android.content.Context;
-import android.os.Build;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.LifecycleOwner;
 
-import com.alibaba.fastjson.JSON;
+import androidx.annotation.NonNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import androidx.lifecycle.LiveData;
+
+import java.util.Stack;
+
 
 public abstract class AccountManger {
-       String authToken;
-    public   Context context;
 
-    public AccountManger(Context context) {
-        this.context = context;
-    }
 
-    public List<AccountInfo> getAllAccounts(){
-        String accounts = (String) SPUtil.get(context, "accounts", "");
-        List<AccountInfo> accountInfos = JSON.parseArray(accounts, AccountInfo.class);
-        return accountInfos==null?new ArrayList<>():accountInfos;
-    }
-    public void setAllAccounts( List<AccountInfo> list) {
+    AccountInfoRepository accountInfoRepository;
+    AccountInfo loggedinAccount;
+    public  Context context;
 
-        SPUtil.put(context, "accounts", JSON.toJSONString(list));
-    }
-    public String getAuthToken() {
-        String authToken = (String) SPUtil.get(context, "authToken", "");
-        return authToken;
-    }
+    public AccountManger(@NonNull Context context) {
 
-    public void setAuthToken(String authToken) {
-        SPUtil.put(context, "authToken", authToken);
-    }
-
-    protected boolean addAccount(AccountInfo info){
-        List<AccountInfo> accounts =getAllAccounts();
-         Map<String, AccountInfo> existingByName = null;
-         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-             existingByName = accounts.stream()
-                     .collect(Collectors.toMap(AccountInfo::getName, item -> item));
-         }
-         existingByName.put(info.getName(), info);
-        // map转list
-         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-             accounts=existingByName.values().stream().collect(Collectors.toList());
-         }
-
-        SPUtil.put(context, "accounts", JSON.toJSONString(accounts));
-         setLoginAccountInfo(info);
-         return true;
-    }
-
-    public AccountInfo getLoginAccountInfo() {
-        String loginAccount = (String) SPUtil.get(context, "loginAccountInfo", "");
-        return JSON.parseObject(loginAccount, AccountInfo.class);
-    }
-
-    public void setLoginAccountInfo(AccountInfo loginAccountInfo) {
-        SPUtil.put(context, "loginAccountInfo", JSON.toJSONString(loginAccountInfo));
+       this.context = context;
+       accountInfoRepository = new AccountInfoRepository(context);
 
     }
-  public abstract void doInLogin(AppCompatActivity onOwner, AccountInfo info, ResultCallback callback);
-    public abstract  void doInLogout(AppCompatActivity onOwner, ResultCallback callback);
-    public abstract  void autoLogin(AppCompatActivity onOwner,ResultCallback callback);
+
+    public AccountInfo getLoggedinAccount() {
+        return loggedinAccount;
+    }
+
+    public void setLoggedinAccount(AccountInfo loggedinAccount) {
+        this.loggedinAccount = loggedinAccount;
+    }
+    // 自定义非粘性livedata
+    private MyMutableLiveData<LoginResult> loginResult = new MyMutableLiveData<>();
+
+
+   public LiveData<LoginResult> getLoginResult() {
+        return loginResult;
+    }
+
+
+
+    public void login(String username, String password){
+        AccountInfo loggedinAccount1 = getLoggedinAccount();
+        if (loggedinAccount1 != null ){
+            logout();
+        }
+        doInLogin(username,password,new LoginResultCallback() {
+            @Override
+            public void onSuccess(AccountInfo info,LoggedInUserView userView) {
+
+                setLoggedinAccount(info);
+                accountInfoRepository.accountDao.insertOrUpdate(info);
+                loginResult.postValue(new LoginResult(userView));
+            }
+
+            @Override
+            public void onFailure(int statusCode, String errorMessage) {
+                loginResult.postValue(new LoginResult(statusCode));
+            }
+        });
+
+    }
+    public void swich(String username, String password){
+        doInLogout(new LogoutResultCallback(){
+            @Override
+            public void onSuccess() {
+                setLoggedinAccount(null);
+                login(username,password);
+            }
+
+            @Override
+            public void onFailure(int statusCode, String errorMessage) {
+
+            }
+        });
+
+    }
+    public void logout(){
+
+        doInLogout(new LogoutResultCallback(){
+            @Override
+            public void onSuccess() {
+                   setLoggedinAccount(null);
+
+            }
+
+            @Override
+            public void onFailure(int statusCode, String errorMessage) {
+
+            }
+        });
+    }
+   protected abstract void doInLogin(String username, String password, LoginResultCallback callback);
+    protected abstract  void doInLogout( LogoutResultCallback callback);
+    protected abstract  void autoLogin(LoginResultCallback callback);
 
 
 

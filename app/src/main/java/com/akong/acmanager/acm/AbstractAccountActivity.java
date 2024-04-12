@@ -1,8 +1,11 @@
 package com.akong.acmanager.acm;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.ProgressBar;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -10,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.akong.acmanager.R;
+import com.loading.dialog.AndroidLoadingDialog;
 import com.xuexiang.xui.XUI;
 import com.xuexiang.xui.widget.dialog.bottomsheet.BottomSheet;
 
@@ -19,46 +23,41 @@ public abstract class AbstractAccountActivity<T extends AccountManger,M extends 
     protected   M adapter;
 
      protected   Class Main,Login,Register;
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        XUI.init(getApplication());
         XUI.initTheme(this);
         setContentView(R.layout.activity_account);
         instance=initManger();
         adapter = initAdapter();
         setTargetActivity();
-        adapter.setData(instance.getAllAccounts());
+        adapter.setData(instance.accountInfoRepository.accountDao.getAllAccounts());
         RecyclerView recyclerView =findViewById(R.id.recyclerView);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
-        AccountInfo loginAccountInfo =instance.getLoginAccountInfo();
+        AccountInfo loginAccountInfo =instance.loggedinAccount;
+        AndroidLoadingDialog iosLoadingDialog = new AndroidLoadingDialog().setHintMsg("正在切换账号中...").setOnTouchOutside(true);
+        instance.getLoginResult().observe(this,loginResult -> {
+            iosLoadingDialog.dismiss();
+            Intent intent = new Intent(AbstractAccountActivity.this, Main);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+        });
         adapter.setOnItemClickLitener(new OnItemClickLitener<AccountInfo>() {
+            @SuppressLint("SuspiciousIndentation")
             @Override
             public void onItemClick(View view, AccountInfo accountInfo) {
                 boolean flag= loginAccountInfo.getAccountId().equals(accountInfo.getAccountId());
                 if (!flag)
-                    instance.doInLogout(AbstractAccountActivity.this,new ResultCallback() {
-                        @Override
-                        public void onSuccess(int statusCode,String message) {
-                            instance.doInLogin(AbstractAccountActivity.this,accountInfo, new ResultCallback() {
-                                @Override
-                                public void onSuccess(int statusCode,String message) {
-                                    startActivity(new Intent(AbstractAccountActivity.this, Main));
-                                }
+                {
+                    iosLoadingDialog.show(getFragmentManager(), "AndroidLoadingDialog");
+                    instance.swich(accountInfo.getAccountId(),accountInfo.getPassword());
 
-                                @Override
-                                public void onFailure(int statusCode,String message) {
-
-                                }
-                            });
-                        }
-
-                        @Override
-                        public void onFailure(int statusCode,String message) {
-
-                        }
-                    });
+                }
             }
         });
 
@@ -75,6 +74,11 @@ public abstract class AbstractAccountActivity<T extends AccountManger,M extends 
     protected abstract void setTargetActivity() ;
     protected abstract ItemTouchHelper.Callback initTouchHelperCallback() ;
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
+
     public void click(View view) {
 
         new BottomSheet.BottomListSheetBuilder(this)
@@ -88,6 +92,7 @@ public abstract class AbstractAccountActivity<T extends AccountManger,M extends 
                            }else {
                                startActivity(new Intent(AbstractAccountActivity.this, Register));
                            }
+                           dialog.dismiss();
                     }
                 })
                 .build()

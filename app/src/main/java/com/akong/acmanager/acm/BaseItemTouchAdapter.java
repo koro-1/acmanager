@@ -65,7 +65,8 @@ public abstract class BaseItemTouchAdapter extends RecyclerView.Adapter<BaseItem
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    int pos = holder.getLayoutPosition();
+
+                   if (  item.getAccountId().equals(accountManger.loggedinAccount.getAccountId()))return;
                     mOnItemClickLitener.onItemClick(holder.itemView,item);
                 }
             });
@@ -75,16 +76,15 @@ public abstract class BaseItemTouchAdapter extends RecyclerView.Adapter<BaseItem
         Glide.with(context).load(item.getImgUrl()).into(holder.imageView);
         holder.textView2.setText(item.getAccountId());
 
-        AccountInfo loginAccountInfo = accountManger.getLoginAccountInfo();
+        AccountInfo loginAccountInfo = accountManger.loggedinAccount;
         boolean flag= loginAccountInfo.getAccountId().equals(item.getAccountId());
         // 设置不可点击
-
         holder.textView3.setVisibility(flag?View.VISIBLE:View.INVISIBLE);
 
     }
     @Override
     public int getItemViewType(int position) {
-        String accountId = accountManger.getLoginAccountInfo().getAccountId();
+        String accountId = accountManger.loggedinAccount.getAccountId();
         if (data.get(position).getAccountId() .equals(accountId) ) {
             return -1; // 禁止滑动的 item 类型标识
         }
@@ -133,8 +133,9 @@ public abstract class BaseItemTouchAdapter extends RecyclerView.Adapter<BaseItem
     @Override
     public void onItemDissmiss(int position) {
         //移除数据
+
+        accountManger.accountInfoRepository.accountDao.delete(data.get(position));
         data.remove(position);
-        accountManger.setAllAccounts(data);
         notifyItemRemoved(position);
     }
 
@@ -146,7 +147,7 @@ public abstract class BaseItemTouchAdapter extends RecyclerView.Adapter<BaseItem
     public void onItemMove(int fromPosition, int toPosition) {
         //交换位置
         Collections.swap(data,fromPosition,toPosition);
-        accountManger.setAllAccounts(data);
+        accountManger.accountInfoRepository.reset(data);
         notifyItemMoved(fromPosition,toPosition);
     }
 
@@ -161,7 +162,7 @@ public abstract class BaseItemTouchAdapter extends RecyclerView.Adapter<BaseItem
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             textView= itemView.findViewById(R.id.textView2);
-            imageView =     itemView.findViewById(R.id.imageView);
+            imageView = itemView.findViewById(R.id.imageView);
             textView2= itemView.findViewById(R.id.textView3);
             textView3= itemView.findViewById(R.id.textView4);
             tv= itemView.findViewById(R.id.tv_text);

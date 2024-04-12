@@ -37,7 +37,11 @@ dependencies {
     implementation 'com.github.xuexiangjys:XUI:1.1.5'
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     implementation 'com.alibaba:fastjson:1.1.72.android'
-
+    //room
+    def room_version = "2.3.0"
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+    implementation 'com.github.ydstar:loadingdialog:1.0.0'
 }
 
 

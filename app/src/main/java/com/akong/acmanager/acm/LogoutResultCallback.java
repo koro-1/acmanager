@@ -1,7 +1,7 @@
 package com.akong.acmanager.acm;
 
-public interface ResultCallback {
-    void onSuccess(int statusCode,String message);
+public interface LogoutResultCallback {
+    void onSuccess();
     void onFailure(int statusCode,String errorMessage);
 
 }
